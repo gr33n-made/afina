@@ -5,14 +5,21 @@
 #include <condition_variable>
 #include <mutex>
 #include <pthread.h>
-#include <unordered_set>
 
 #include <afina/network/Server.h>
+#include <unordered_map>
+#include <assert.h>
+
+#include <afina/network/Connection.h>
+#include <unordered_set>
+#include <iostream>
 
 namespace Afina {
 namespace Network {
 namespace Blocking {
 
+
+class ConnectionImpl;
 /**
  * # Network resource manager implementation
  * Server that is spawning a separate thread for each connection
@@ -31,19 +38,25 @@ public:
     // See Server.h
     void Join() override;
 
+    //// Methods for miltithreading work woth connections
+    ///////////////////////////////////////////////////////////////////////////////
+
+    void AddConnection(Connection *p_connection);
+
+    void EraseConnection(Connection *p_connection);
+
+    int SizeConnections();
+
 protected:
     /**
      * Method is running in the connection acceptor thread
      */
     void RunAcceptor();
 
-    /**
-     * Methos is running for each connection
-     */
-    void RunConnection();
-
 private:
+
     static void *RunAcceptorProxy(void *p);
+
 
     // Atomic flag to notify threads when it is time to stop. Note that
     // flag must be atomic in order to safely publisj changes cross thread
@@ -72,8 +85,11 @@ private:
 
     // Threads that are processing connection data, permits
     // access only from inside of accept_thread
-    std::unordered_set<pthread_t> connections;
+    std::unordered_set<Connection*> set_connections;
+
+    int server_socket;
 };
+
 
 } // namespace Blocking
 } // namespace Network
